@@ -2622,7 +2622,7 @@ static int ip_route_output_slow(struct net *net, struct rtable **rp,
 		goto make_route;
 	}
 
-	if (fib_lookup(net, &fl, &res)) {
+	if (fib_lookup(net, &fl, &res)) { /*这个函数有两个定义，一个为普通路由，查找local和main路由表，另一个为策略路由*/
 		res.fi = NULL;
 		if (oldflp->oif) {
 			/* Apparently, routing tables are wrong. Assume,

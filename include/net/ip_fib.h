@@ -45,10 +45,10 @@ struct fib_config {
 
 struct fib_info;
 
-struct fib_nh {
-	struct net_device	*nh_dev;
-	struct hlist_node	nh_hash;
-	struct fib_info		*nh_parent;
+struct fib_nh {						/*[include/net/ip_fib.h]*/
+	struct net_device	*nh_dev;	/*该路由表项输出网络设备*/
+	struct hlist_node	nh_hash;	/*fib_nh组成的散列表*/
+	struct fib_info		*nh_parent;	/*指向所属fib_info结构体*/
 	unsigned		nh_flags;
 	unsigned char		nh_scope;
 #ifdef CONFIG_IP_ROUTE_MULTIPATH
@@ -58,35 +58,35 @@ struct fib_nh {
 #ifdef CONFIG_NET_CLS_ROUTE
 	__u32			nh_tclassid;
 #endif
-	int			nh_oif;
-	__be32			nh_gw;
+	int			nh_oif;				/*输出网络设备索引*/
+	__be32			nh_gw;			/*网关地址*/
 };
 
 /*
  * This structure contains data shared by many of routes.
  */
 
-struct fib_info {
-	struct hlist_node	fib_hash;
-	struct hlist_node	fib_lhash;
+struct fib_info {					/*[include/net/ip_fib.h]*/
+	struct hlist_node	fib_hash;	/*所有fib_info组成散列表，该表为全局散列表fib_info_hash*/
+	struct hlist_node	fib_lhash;	/*当存在首源地址时，才会将fib_info插入该散列表，该表为全局散列表fib_info_laddrhash*/
 	struct net		*fib_net;
-	int			fib_treeref;
-	atomic_t		fib_clntref;
-	int			fib_dead;
-	unsigned		fib_flags;
-	int			fib_protocol;
-	__be32			fib_prefsrc;
-	u32			fib_priority;
-	u32			fib_metrics[RTAX_MAX];
-#define fib_mtu fib_metrics[RTAX_MTU-1]
-#define fib_window fib_metrics[RTAX_WINDOW-1]
-#define fib_rtt fib_metrics[RTAX_RTT-1]
-#define fib_advmss fib_metrics[RTAX_ADVMSS-1]
-	int			fib_nhs;
+	int			fib_treeref;	/*使用该fib_info结构的fib_node的数目*/
+	atomic_t		fib_clntref;/*引用计数。路由查找成功而被持有的引用计数*/
+	int			fib_dead;		/*标记路由表项正在被删除的标志，当该标志被设置为1时，警告该数据结构将被删除而不能再使用*/
+	unsigned		fib_flags;	/*当前使用的唯一标志是RTNH_F_DEAD，表示下一跳已无效*/		
+	int			fib_protocol;	/*设置路由的协议*/
+	__be32			fib_prefsrc;				/*首选源IP地址*/
+	u32			fib_priority;					/*路由优先级，默认为0，值越小优先级越高*/
+	u32			fib_metrics[RTAX_MAX];			/*与路由相关的度量值*/
+#define fib_mtu fib_metrics[RTAX_MTU-1]			/*路由mtu值*/
+#define fib_window fib_metrics[RTAX_WINDOW-1]	/*路由窗口值*/
+#define fib_rtt fib_metrics[RTAX_RTT-1]			/*rtt值*/
+#define fib_advmss fib_metrics[RTAX_ADVMSS-1]	/*mss值*/
+	int			fib_nhs;						/*可用的下一跳数量，通常为1.只有支持多路径路由时，才大于*/
 #ifdef CONFIG_IP_ROUTE_MULTIPATH
 	int			fib_power;
 #endif
-	struct fib_nh		fib_nh[0];
+	struct fib_nh		fib_nh[0];				/*表示路由的下一跳*/
 #define fib_dev		fib_nh[0].nh_dev
 };
 
@@ -140,11 +140,11 @@ struct fib_result_nl {
 #define FIB_RES_DEV(res)		(FIB_RES_NH(res).nh_dev)
 #define FIB_RES_OIF(res)		(FIB_RES_NH(res).nh_oif)
 
-struct fib_table {
-	struct hlist_node tb_hlist;
-	u32		tb_id;
+struct fib_table {					/*[include/net/ip_fib.h]*/
+	struct hlist_node tb_hlist;		/*将所有路由表连接成一个双向链表*/
+	u32		tb_id;					/*路由标识，最多可以有256个路由表*/
 	int		tb_default;
-	unsigned char	tb_data[0];
+	unsigned char	tb_data[0];		/*路由表项的散列表的起始地址，指向fn_hash*/
 };
 
 extern int fib_table_lookup(struct fib_table *tb, const struct flowi *flp,

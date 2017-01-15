@@ -47,24 +47,22 @@
 static struct kmem_cache *fn_hash_kmem __read_mostly;
 static struct kmem_cache *fn_alias_kmem __read_mostly;
 
-struct fib_node {
-	struct hlist_node	fn_hash;
-	struct list_head	fn_alias;
-	__be32			fn_key;
-	struct fib_alias        fn_embedded_alias;
+struct fib_node {								/*[net/ipv4/fib_hash.c]*/
+	struct hlist_node	fn_hash;				/*用于散列表中同一bucket内的所有fib_node链接成一个双向链表*/
+	struct list_head	fn_alias;				/*指向多个fib_alias结构组成的链表*/
+	__be32			fn_key;						/*由IP和路由项的netmask与操作后得到，被用作查找路由表的搜索条件*/
+	struct fib_alias        fn_embedded_alias;	/*内嵌的fib_alias结构，一般指向最后一个fib_alias*/
 };
 
-struct fn_zone {
-	struct fn_zone		*fz_next;	/* Next not empty zone	*/
-	struct hlist_head	*fz_hash;	/* Hash table pointer	*/
-	int			fz_nent;	/* Number of entries	*/
-
-	int			fz_divisor;	/* Hash divisor		*/
-	u32			fz_hashmask;	/* (fz_divisor - 1)	*/
+struct fn_zone {					/*[net/ipv4/fib_hash.c]*/
+	struct fn_zone		*fz_next;	/*将不为空的路由表项fn_zone链接在一起，该链表头存储在fn_hash的fn_zone_list中*/
+	struct hlist_head	*fz_hash;	/*指向存储路由表项fib_node的散列表*/
+	int			fz_nent;			/*在zone的散列表中的fib_node的数目，用于判断是否需要改变散列表的容量*/
+	int			fz_divisor;			/*散列表fz_hash的容量，及散列表桶的数目每次扩大2倍，最大1024*/
+	u32			fz_hashmask;		/*值为fz_divisor-1，用来计算散列表的关键值*/
 #define FZ_HASHMASK(fz)		((fz)->fz_hashmask)
-
-	int			fz_order;	/* Zone order		*/
-	__be32			fz_mask;
+	int			fz_order;			/*掩码fz_mask的长度*/
+	__be32			fz_mask; 		/*利用fz_order构造得到的网络掩码*/
 #define FZ_MASK(fz)		((fz)->fz_mask)
 };
 
@@ -72,9 +70,9 @@ struct fn_zone {
  * can be cheaper than memory lookup, so that FZ_* macros are used.
  */
 
-struct fn_hash {
-	struct fn_zone	*fn_zones[33];
-	struct fn_zone	*fn_zone_list;
+struct fn_hash {					/*[net/ipv4/fib_hash.c]*/
+	struct fn_zone	*fn_zones[33];	/*路由指针数组，0~32，按掩码长度来存放路由表项*/
+	struct fn_zone	*fn_zone_list;	/*指向第一个活动的路由区*/
 };
 
 static inline u32 fn_hash(__be32 key, struct fn_zone *fz)

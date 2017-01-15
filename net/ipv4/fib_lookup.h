@@ -5,13 +5,13 @@
 #include <linux/list.h>
 #include <net/ip_fib.h>
 
-struct fib_alias {
-	struct list_head	fa_list;
-	struct fib_info		*fa_info;
-	u8			fa_tos;
-	u8			fa_type;
-	u8			fa_scope;
-	u8			fa_state;
+struct fib_alias {					/*[net/ipv4/fib_lookup.h]*/
+	struct list_head	fa_list;	/*将所有fib_alias组成链表*/
+	struct fib_info		*fa_info;	/*指向fib_info，储存如何处理消息的路由信息*/
+	u8			fa_tos;				/*路由的服务类型比特位字段*/
+	u8			fa_type;			/*路由表项的类型，间接定义了当路由查找匹配时，应采取的动作*/
+	u8			fa_scope;			/*路由表项的作用范围*/
+	u8			fa_state;			/*一些标志位，目前只有FA_S_ACCESSED。表示该表项已经被访问过*/
 #ifdef CONFIG_IP_FIB_TRIE
 	struct rcu_head		rcu;
 #endif

@@ -71,22 +71,24 @@ fail:
 }
 #else
 
+/*策略路由的路由创建函数*/
 struct fib_table *fib_new_table(struct net *net, u32 id)
 {
 	struct fib_table *tb;
 	unsigned int h;
 
 	if (id == 0)
-		id = RT_TABLE_MAIN;
-	tb = fib_get_table(net, id);
-	if (tb)
+		id = RT_TABLE_MAIN;			/*如果用户空间传过来的是0，内核会将路由id设为254*/
+	tb = fib_get_table(net, id); 	/*在net‐>ipv4.fib_table_hash[]散列表中查找指定的路由表*/
+	if (tb)							/*若存在，返回路由表*/
 		return tb;
 
-	tb = fib_hash_table(id);
+	tb = fib_hash_table(id);		/*若不存在，则创建路由表*/
 	if (!tb)
 		return NULL;
 	h = id & (FIB_TABLE_HASHSZ - 1);
-	hlist_add_head_rcu(&tb->tb_hlist, &net->ipv4.fib_table_hash[h]);
+	/*将新创建的路由表插入到net‐>ipv4.fib_table_hash[]散列表*/
+	hlist_add_head_rcu(&tb->tb_hlist, &net->ipv4.fib_table_hash[h]);	
 	return tb;
 }
 
@@ -531,6 +533,7 @@ const struct nla_policy rtm_ipv4_policy[RTA_MAX+1] = {
 	[RTA_FLOW]		= { .type = NLA_U32 },
 };
 
+/*用于将nlh内容，传递到cfg中*/
 static int rtm_to_fib_config(struct net *net, struct sk_buff *skb,
 			    struct nlmsghdr *nlh, struct fib_config *cfg)
 {
@@ -543,15 +546,16 @@ static int rtm_to_fib_config(struct net *net, struct sk_buff *skb,
 		goto errout;
 
 	memset(cfg, 0, sizeof(*cfg));
-
-	rtm = nlmsg_data(nlh);
-	cfg->fc_dst_len = rtm->rtm_dst_len;
-	cfg->fc_tos = rtm->rtm_tos;
-	cfg->fc_table = rtm->rtm_table;
-	cfg->fc_protocol = rtm->rtm_protocol;
-	cfg->fc_scope = rtm->rtm_scope;
-	cfg->fc_type = rtm->rtm_type;
-	cfg->fc_flags = rtm->rtm_flags;
+	
+	rtm = nlmsg_data(nlh); 					/*跳过nlh的硬件头部，让rtm指向nlh的内容，即将nlh赋值给rtm*/
+	/*将rtm的内容，赋值给cfg*/
+	cfg->fc_dst_len = rtm->rtm_dst_len;		/*掩码长度*/
+	cfg->fc_tos = rtm->rtm_tos;				/*tos服务类型，默认为0*/
+	cfg->fc_table = rtm->rtm_table;			/*路由表id:connected为0;kernel route为255.如果id为0，kernel会将id设为254*/
+	cfg->fc_protocol = rtm->rtm_protocol;	/*协议类型：connected和kernel route都为11*/
+	cfg->fc_scope = rtm->rtm_scope;			/*范围：connected为253；kernel route为254*/
+	cfg->fc_type = rtm->rtm_type;			/*类型：connected为1；kernel route为2*/
+	cfg->fc_flags = rtm->rtm_flags;			/*connected和kernel route都为1024*/
 	cfg->fc_nlflags = nlh->nlmsg_flags;
 
 	cfg->fc_nlinfo.pid = NETLINK_CB(skb).pid;
@@ -562,7 +566,7 @@ static int rtm_to_fib_config(struct net *net, struct sk_buff *skb,
 		err = -EINVAL;
 		goto errout;
 	}
-
+	/*获取路由id*/
 	nlmsg_for_each_attr(attr, nlh, sizeof(struct rtmsg), remaining) {
 		switch (nla_type(attr)) {
 		case RTA_DST:
@@ -624,6 +628,7 @@ errout:
 	return err;
 }
 
+/*其中nlh为配置路由的参数，有目的地址、掩码长度、路由表table_id、网关地址等。*/
 static int inet_rtm_newroute(struct sk_buff *skb, struct nlmsghdr *nlh, void *arg)
 {
 	struct net *net = sock_net(skb->sk);
@@ -631,17 +636,17 @@ static int inet_rtm_newroute(struct sk_buff *skb, struct nlmsghdr *nlh, void *ar
 	struct fib_table *tb;
 	int err;
 
-	err = rtm_to_fib_config(net, skb, nlh, &cfg);
+	err = rtm_to_fib_config(net, skb, nlh, &cfg);	/*将netlink传递的消息nlh赋值给fib_config cfg*/
 	if (err < 0)
 		goto errout;
 
-	tb = fib_new_table(net, cfg.fc_table);
+	tb = fib_new_table(net, cfg.fc_table);			/*根据给定路由表ID，获取路由表*/
 	if (tb == NULL) {
 		err = -ENOBUFS;
 		goto errout;
 	}
 
-	err = fib_table_insert(tb, &cfg);
+	err = fib_table_insert(tb, &cfg);				/*获取路由表后，通过insert创建路由表项并添到该路由表*/
 errout:
 	return err;
 }
@@ -1081,13 +1086,20 @@ static struct pernet_operations fib_net_ops = {
 
 void __init ip_fib_init(void)
 {
+	/*注册与路由相关的netlink消息，以及相对应的路由添加、删除、获取的函数*/
 	rtnl_register(PF_INET, RTM_NEWROUTE, inet_rtm_newroute, NULL);
 	rtnl_register(PF_INET, RTM_DELROUTE, inet_rtm_delroute, NULL);
 	rtnl_register(PF_INET, RTM_GETROUTE, NULL, inet_dump_fib);
 
-	register_pernet_subsys(&fib_net_ops);
-	register_netdevice_notifier(&fib_netdev_notifier);
-	register_inetaddr_notifier(&fib_inetaddr_notifier);
+	/*将一个网络协议模块添加到每一个网络命令空间中，然后再执行其ops‐>init程序进行初始化，
+	 *一般其ops‐>init会在其对应的proc目录下，生成一个网络协议模块对应的proc文件或proc目录，
+	 *并执行一些协议初始化相关的函数
+	 */
+	register_pernet_subsys(&fib_net_ops); 
+	
+	register_netdevice_notifier(&fib_netdev_notifier);	/*注册网络设备状态变化到通知链netdev_chain*/
+	register_inetaddr_notifier(&fib_inetaddr_notifier);	/*注册网络设备地址变化到通知链netdev_chain*/
 
-	fib_hash_init();
+	fib_hash_init();	/*为fib_node和fib_alias创建缓存池*/
 }
+
