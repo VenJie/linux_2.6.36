@@ -46,14 +46,15 @@ struct ipv4_devconf {
 	DECLARE_BITMAP(state, __IPV4_DEVCONF_MAX - 1);
 };
 
+/*IPv4的协议控制数据结构*/
 struct in_device {
-	struct net_device	*dev;
+	struct net_device	*dev;	/*网络设备结构体*/
 	atomic_t		refcnt;
 	int			dead;
-	struct in_ifaddr	*ifa_list;	/* IP ifaddr chain		*/
+	struct in_ifaddr	*ifa_list;	/* IP ifaddr chain*/
 	rwlock_t		mc_list_lock;
-	struct ip_mc_list	*mc_list;	/* IP multicast filter chain    */
-	int			mc_count;	          /* Number of installed mcasts	*/
+	struct ip_mc_list	*mc_list;	/* IP multicast filter chain*/
+	int			mc_count;	          /* Number of installed mcasts*/
 	spinlock_t		mc_tomb_lock;
 	struct ip_mc_list	*mc_tomb;
 	unsigned long		mr_v1_seen;

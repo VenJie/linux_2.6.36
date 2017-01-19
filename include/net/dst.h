@@ -36,6 +36,7 @@
 
 struct sk_buff;
 
+/*目的地结构*/
 struct dst_entry {
 	struct rcu_head		rcu_head;
 	struct dst_entry	*child;
@@ -64,8 +65,8 @@ struct dst_entry {
 #else
 	void			*__pad1;
 #endif
-	int			(*input)(struct sk_buff*);
-	int			(*output)(struct sk_buff*);
+	int			(*input)(struct sk_buff*);		/*输入操作*/
+	int			(*output)(struct sk_buff*);		/*输出操作*/
 
 	struct  dst_ops	        *ops;
 

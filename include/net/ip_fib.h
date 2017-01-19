@@ -95,10 +95,11 @@ struct fib_info {					/*[include/net/ip_fib.h]*/
 struct fib_rule;
 #endif
 
+/*路由结果数据结构*/
 struct fib_result {
-	unsigned char	prefixlen;
-	unsigned char	nh_sel;
-	unsigned char	type;
+	unsigned char	prefixlen;	/*子网掩码长度*/
+	unsigned char	nh_sel;		/*下一跳数目*/
+	unsigned char	type;		
 	unsigned char	scope;
 	struct fib_info *fi;
 #ifdef CONFIG_IP_MULTIPLE_TABLES

@@ -251,12 +251,13 @@ struct sockaddr_in {
 #ifdef __KERNEL__
 
 static inline bool ipv4_is_loopback(__be32 addr)
-{
+{	/*检测是否是124开头的回环地址*/
 	return (addr & htonl(0xff000000)) == htonl(0x7f000000);
 }
 
 static inline bool ipv4_is_multicast(__be32 addr)
 {
+	/*检测是否是224开头的组播ip地址*/
 	return (addr & htonl(0xf0000000)) == htonl(0xe0000000);
 }
 

@@ -49,13 +49,15 @@
 
 struct fib_nh;
 struct inet_peer;
+
+/*路由缓存结构*/
 struct rtable {
 	struct dst_entry	dst;
 
 	/* Cache lookup keys */
-	struct flowi		fl;
+	struct flowi		fl;	/*路由查找的关键信息*/
 
-	struct in_device	*idev;
+	struct in_device	*idev;	/*ipv4相关信息结构*/
 	
 	int			rt_genid;
 	unsigned		rt_flags;
